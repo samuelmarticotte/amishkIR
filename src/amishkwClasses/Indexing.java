@@ -4,6 +4,9 @@ package amishkwClasses;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
+import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 
@@ -28,14 +31,15 @@ import java.text.DecimalFormat;
 public class Indexing {
 	
 	private IndexWriter indexWriter;
+	Debug debug;
 
 	//------------------------------------------------------------------------------------------------(Main Indexer Method)
 	
 	public static void main(String dir) throws Exception {
-		// TODO Auto-generated method stub
-		//new IndexingBaseline().IndexBaseline("/Users/samuelmarticotte/Desktop/4_Education/0_PhD/0_DIC/0_Cours_actuels/Hiver_2018/Psycholinguistique_et_TAL/3_TP1/0_Collection_de_documents/0_documents_a_indexer_baseline");
-		//new Indexing().IndexSophisticated("/Users/samuelmarticotte/Desktop/4_Education/0_PhD/0_DIC/0_Cours_actuels/Hiver_2018/Psycholinguistique_et_TAL/3_TP1/0_Collection_de_documents/0_documents_a_indexer_sophisticated");
-		//new Indexing().IndexBaseline(dir); //call from main
+	}
+	
+	Indexing(Debug dg){
+		this.debug = dg;
 	}
 	
 	//-----------------------------------------------------------------------------------------------(Baseline Indexing)
@@ -43,25 +47,31 @@ public class Indexing {
 	//This method indexes documents with baseline 
 	//Settings = tf-idf, standard analyzer, stop list and stemming
 	//Arg 1: directory of documents
-	public void IndexBaseline(String dir) throws Exception {
+	public void IndexBaseline(String dir, Debug debug, String similarity, Analyzer analyzer) throws Exception {
 		
 		//Calculat time
 		DecimalFormat df = new DecimalFormat(".##");
 		long start = System.nanoTime(); //calculate current time
 		
-		//Create analyzer
+		//Create Index Directory
 		Directory indexDir = FSDirectory.open(new File(dir).toPath()); 	//opens the directory to files
-		Analyzer analyzer = new StandardAnalyzer();						//Creates a standard analyser for tokenization
 		IndexWriterConfig cfg = new IndexWriterConfig(analyzer);		//Creates index indexWriter using the standard analyser
+	
+		//Set similarity
+		cfg = new SetSimilarity().SetSimilarityIndex(cfg, similarity);
+		
 		cfg.setOpenMode(OpenMode.CREATE);								//Creation mode
 		indexWriter = new IndexWriter(indexDir, cfg);					//Create an IndexindexWriter
 		
-		FileFilter filter = null; 										//All files will be indexed
-		indexDir(dir, filter);	  										//Index all files					
+		//Index all files
+		FileFilter filter = null; 									
+		indexDir(dir, filter);	  										
 		
-		long elapsedTime = System.nanoTime() - start; //calculate elapsed time
+		//calculate elapsed time
+		long elapsedTime = System.nanoTime() - start; 
 		double seconds = (double)elapsedTime / 1000000000.0;
 		System.out.println("Calculation time : " + df.format(seconds) + "seconds");
+		System.out.println("Analyzer was baseline");	//Using Stop filter and Porter stemming
 		close(); //close IndexindexWriter
 		
 	}//end IndexBaseline method
@@ -71,7 +81,7 @@ public class Indexing {
 	//This method indexes documents with Okapi-BM25
 	//Settings : 
 	//Arg1 : directory of documents
-	public void IndexSophisticated(String dir) throws Exception {
+	public void IndexSophisticated(String dir, Debug debug, String similarity, Analyzer analyzer) throws Exception {
 		
 		//Calculate time
 		DecimalFormat df = new DecimalFormat(".##");
@@ -80,15 +90,17 @@ public class Indexing {
 		//Open directory for indexing
 		Directory indexDir = FSDirectory.open(new File(dir).toPath()); 	//opens the directory to files
 		System.out.println("Index files in directory:\n" + dir.toString());
-
-		//Analyzer is sophisticated : stop + porter
-		Analyzer analyzer = new AnalyzerSophisticated();
-
-		//Write the index
 		IndexWriterConfig cfg = new IndexWriterConfig(analyzer);		//Creates index indexWriter using the standard analyser
+		
+		//Setting similarity
+		cfg = new SetSimilarity().SetSimilarityIndex(cfg, similarity);
+		//cfg = new SetSimilarity().SetSimilarityIndex(cfg, similarity);
+		
 		cfg.setRAMBufferSizeMB(256.0);									//Increase RAM buffer size
 		cfg.setOpenMode(OpenMode.CREATE);								//Creation mode
 		indexWriter = new IndexWriter(indexDir, cfg);
+
+		
 		FileFilter filter = null; 										//no file filter for now : all files indexed
 		indexDir(dir, filter);	  										//Index all files
 		
@@ -137,12 +149,16 @@ public class Indexing {
 			if (doc != null && doc.getField("contents") != null) 								//until no content grab documents
 				
 				indexWriter.addDocument(doc);
-			System.out.println("Added: " + doc.get("docno")); 									//Prints added document						
+			System.out.println("Added: " + doc.get("docno")); //Prints added document
+			//this.debug.append("Added: " + doc.get("docno")); 
 			//System.out.println(doc);
 		}//end while
 		
 	}//end indexFile method
 	//------------------------------------------------------------------------------------------------(Close indexWriter)
+	
+	
+	
 	
 	public void close() throws IOException {
 		indexWriter.close();

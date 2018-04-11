@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.rmi.dgc.DGC;
 import java.util.Iterator;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -27,8 +28,7 @@ public class TrecDocIterator implements Iterator<Document> {
 		rdr = new BufferedReader(new FileReader(file));
 	}
 
-
-	@Override
+	
 	public Document next() {
 		Document doc = new Document();
 		StringBuffer sb = new StringBuffer();
@@ -60,21 +60,15 @@ public class TrecDocIterator implements Iterator<Document> {
 					doc.add(new StringField("docno", docno, Field.Store.YES));
 				}
 
-				sb.append(line);
+				sb.append(line + " ");
 			}
 			if (sb.length() > 0)
 			{
-					String sbstring = sb.toString().replace("<DOC>", "");
-					sbstring = sbstring.replace("</DOC>", "");
-					sbstring = sbstring.replace("</HEAD>", "");
-					sbstring = sbstring.replace("<HEAD>", "");
-					sbstring = sbstring.replace("</BYLINE>", "");
-					sbstring = sbstring.replace("<BYLINE>", " ");
-					sbstring = sbstring.replace("</DATELINE>", "");
-					sbstring = sbstring.replace("<DATELINE>", " ");
-					sbstring = sbstring.replace("</TEXT>", "");
-					sbstring = sbstring.replace("<TEXT>", " ");			
-					doc.add(new TextField("contents", sb.toString(), Field.Store.YES));
+					String makeSpaces = sb.toString().replaceAll("\\s+", " ");
+					String noHTMLString = makeSpaces.toString().replaceAll("\\<.*?>"," ");
+					
+					doc.add(new TextField("contents", noHTMLString, Field.Store.YES));	
+					//System.out.println("contents : " + noHTMLString);
 			}
 		} catch (IOException e) {
 			doc = null;
@@ -82,12 +76,12 @@ public class TrecDocIterator implements Iterator<Document> {
 		return doc;
 	}
 
-	@Override
+	
 	public void remove() {
 		// Do nothing, but don't complain
 	}
 	
-	@Override
+	
 	public boolean hasNext() {
 		return !at_eof;
 	}

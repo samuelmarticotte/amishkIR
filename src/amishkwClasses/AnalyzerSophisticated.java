@@ -2,6 +2,7 @@ package amishkwClasses;
 
 //filters
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
@@ -22,9 +23,10 @@ public class AnalyzerSophisticated extends Analyzer{
 			TokenStream filter = new StandardFilter(source);							//tokenizes stream
 			
 			filter = new StopFilter(filter, StopAnalyzer.ENGLISH_STOP_WORDS_SET);		//stop word filter is applied
+			filter = new LowerCaseFilter(filter);
 			filter = new PorterStemFilter(filter);										//porter stemmer filter is applied
 			
-			System.out.println("Analyzer is sophisticated : Stop filter & Porter stemming");
+			System.out.println("Analyzer includes stop filter & porter stemming");
 			return new TokenStreamComponents(source, filter);
 		}//end TokenStream
 
